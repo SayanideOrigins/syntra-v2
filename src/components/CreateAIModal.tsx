@@ -45,6 +45,9 @@ export function CreateAIModal({ open, onOpenChange, onCreated }: CreateAIModalPr
       customPrompt: customPrompt.trim(),
       personalityNotes: personalityNotes.trim(),
       profilePicture,
+      responseMode: "regular",
+      isMuted: false,
+      isPaused: false,
       createdAt: Date.now(),
     };
     await saveAI(ai);

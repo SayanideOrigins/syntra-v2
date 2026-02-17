@@ -1,3 +1,5 @@
+export type ResponseMode = "regular" | "humanely" | "professional" | "custom";
+
 export interface AIEntity {
   id: string;
   name: string;
@@ -6,6 +8,9 @@ export interface AIEntity {
   customPrompt: string;
   personalityNotes: string;
   profilePicture: string | null;
+  responseMode: ResponseMode;
+  isMuted: boolean;
+  isPaused: boolean;
   createdAt: number;
 }
 
@@ -16,6 +21,10 @@ export interface Group {
   customPrompt: string;
   profilePicture: string | null;
   memberIds: string[];
+  timerOffset: number;
+  autonomousEnabled: boolean;
+  mutedMemberIds: string[];
+  pausedMemberIds: string[];
   createdAt: number;
 }
 
@@ -27,6 +36,10 @@ export interface ChatMessage {
   senderName: string;
   message: string;
   timestamp: number;
+  roundNumber: number;
+  isInterruption: boolean;
+  isAutonomous: boolean;
+  isEdited: boolean;
 }
 
 export type ChatListItem = {
@@ -38,3 +51,19 @@ export type ChatListItem = {
   lastTimestamp: number;
   type: "ai" | "group";
 };
+
+export interface ConversationSettings {
+  globalResponseMode: ResponseMode;
+  markdownEnabled: boolean;
+  autonomousEnabled: boolean;
+  defaultTimerOffset: number;
+}
+
+export interface GroupState {
+  roundNumber: number;
+  activeMembers: string[];
+  mutedMembers: string[];
+  pausedMembers: string[];
+  autonomousFlag: boolean;
+  timerOffset: number;
+}

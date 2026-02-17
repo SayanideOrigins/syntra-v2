@@ -51,6 +51,10 @@ export function CreateGroupModal({ open, onOpenChange, onCreated }: CreateGroupM
       customPrompt: customPrompt.trim(),
       profilePicture,
       memberIds: selectedIds,
+      timerOffset: 1500,
+      autonomousEnabled: false,
+      mutedMemberIds: [],
+      pausedMemberIds: [],
       createdAt: Date.now(),
     };
     await saveGroup(group);

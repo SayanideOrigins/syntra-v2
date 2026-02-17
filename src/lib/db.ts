@@ -15,17 +15,20 @@ let dbPromise: Promise<IDBPDatabase<SyntraDB>> | null = null;
 
 function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<SyntraDB>("syntra", 1, {
-      upgrade(db) {
-        const aiStore = db.createObjectStore("ais", { keyPath: "id" });
-        aiStore.createIndex("by-name", "name");
+    dbPromise = openDB<SyntraDB>("syntra", 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const aiStore = db.createObjectStore("ais", { keyPath: "id" });
+          aiStore.createIndex("by-name", "name");
 
-        const groupStore = db.createObjectStore("groups", { keyPath: "id" });
-        groupStore.createIndex("by-name", "name");
+          const groupStore = db.createObjectStore("groups", { keyPath: "id" });
+          groupStore.createIndex("by-name", "name");
 
-        const msgStore = db.createObjectStore("messages", { keyPath: "id" });
-        msgStore.createIndex("by-chat", "chatId");
-        msgStore.createIndex("by-timestamp", ["chatId", "timestamp"]);
+          const msgStore = db.createObjectStore("messages", { keyPath: "id" });
+          msgStore.createIndex("by-chat", "chatId");
+          msgStore.createIndex("by-timestamp", ["chatId", "timestamp"]);
+        }
+        // v2: no schema changes needed — new fields are just added to existing objects
       },
     });
   }
@@ -35,12 +38,21 @@ function getDB() {
 // AI operations
 export async function getAllAIs(): Promise<AIEntity[]> {
   const db = await getDB();
-  return db.getAll("ais");
+  const ais = await db.getAll("ais");
+  // Backfill v1 records missing new fields
+  return ais.map((ai) => ({
+    responseMode: "regular" as const,
+    isMuted: false,
+    isPaused: false,
+    ...ai,
+  }));
 }
 
 export async function getAI(id: string): Promise<AIEntity | undefined> {
   const db = await getDB();
-  return db.get("ais", id);
+  const ai = await db.get("ais", id);
+  if (!ai) return undefined;
+  return { responseMode: "regular" as const, isMuted: false, isPaused: false, ...ai };
 }
 
 export async function saveAI(ai: AIEntity): Promise<void> {
@@ -56,12 +68,21 @@ export async function deleteAI(id: string): Promise<void> {
 // Group operations
 export async function getAllGroups(): Promise<Group[]> {
   const db = await getDB();
-  return db.getAll("groups");
+  const groups = await db.getAll("groups");
+  return groups.map((g) => ({
+    timerOffset: 1500,
+    autonomousEnabled: false,
+    mutedMemberIds: [],
+    pausedMemberIds: [],
+    ...g,
+  }));
 }
 
 export async function getGroup(id: string): Promise<Group | undefined> {
   const db = await getDB();
-  return db.get("groups", id);
+  const g = await db.get("groups", id);
+  if (!g) return undefined;
+  return { timerOffset: 1500, autonomousEnabled: false, mutedMemberIds: [], pausedMemberIds: [], ...g };
 }
 
 export async function saveGroup(group: Group): Promise<void> {
@@ -73,7 +94,15 @@ export async function saveGroup(group: Group): Promise<void> {
 export async function getMessages(chatId: string): Promise<ChatMessage[]> {
   const db = await getDB();
   const msgs = await db.getAllFromIndex("messages", "by-chat", chatId);
-  return msgs.sort((a, b) => a.timestamp - b.timestamp);
+  // Backfill v1 records
+  const backfilled = msgs.map((m) => ({
+    roundNumber: 0,
+    isInterruption: false,
+    isAutonomous: false,
+    isEdited: false,
+    ...m,
+  }));
+  return backfilled.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 export async function saveMessage(msg: ChatMessage): Promise<void> {
@@ -86,4 +115,21 @@ export async function getLastMessage(chatId: string): Promise<ChatMessage | unde
   const msgs = await db.getAllFromIndex("messages", "by-chat", chatId);
   if (msgs.length === 0) return undefined;
   return msgs.sort((a, b) => b.timestamp - a.timestamp)[0];
+}
+
+export async function deleteMessagesAfter(chatId: string, timestamp: number): Promise<void> {
+  const db = await getDB();
+  const msgs = await db.getAllFromIndex("messages", "by-chat", chatId);
+  const tx = db.transaction("messages", "readwrite");
+  for (const m of msgs) {
+    if (m.timestamp > timestamp) {
+      await tx.store.delete(m.id);
+    }
+  }
+  await tx.done;
+}
+
+export async function updateMessage(msg: ChatMessage): Promise<void> {
+  const db = await getDB();
+  await db.put("messages", msg);
 }

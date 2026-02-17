@@ -1,50 +1,22 @@
-import type { AIEntity, ChatMessage } from "./types";
+import type { ChatMessage } from "./types";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-function buildSystemPrompt(ai: AIEntity, groupPrompt?: string): string {
-  const parts: string[] = [];
-  parts.push(`Your name is ${ai.name}.`);
-  if (ai.job) parts.push(`Your role/job: ${ai.job}.`);
-  if (ai.description) parts.push(`About you: ${ai.description}.`);
-  if (ai.customPrompt) parts.push(ai.customPrompt);
-  if (ai.personalityNotes) parts.push(`Personality: ${ai.personalityNotes}.`);
-  if (groupPrompt) parts.push(`Group context: ${groupPrompt}`);
-  return parts.join("\n");
-}
-
-function chatHistoryToMessages(history: ChatMessage[]): Msg[] {
-  return history.map((m) => ({
-    role: m.senderType === "user" ? "user" as const : "assistant" as const,
-    content: m.senderType === "ai" ? `[${m.senderName}]: ${m.message}` : m.message,
-  }));
-}
-
 export async function streamChat({
-  ai,
-  history,
-  userMessage,
-  groupPrompt,
+  systemPrompt,
+  messages,
   onDelta,
   onDone,
   onError,
 }: {
-  ai: AIEntity;
-  history: ChatMessage[];
-  userMessage: string;
-  groupPrompt?: string;
+  systemPrompt: string;
+  messages: Msg[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
 }) {
-  const systemPrompt = buildSystemPrompt(ai, groupPrompt);
-  const messages: Msg[] = [
-    ...chatHistoryToMessages(history),
-    { role: "user", content: userMessage },
-  ];
-
   try {
     const resp = await fetch(CHAT_URL, {
       method: "POST",
