@@ -1,12 +1,21 @@
 export function TypingIndicator({ name }: { name?: string }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-2">
-      <div className="flex gap-1">
-        <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" style={{ animationDelay: "0s" }} />
-        <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" style={{ animationDelay: "0.2s" }} />
-        <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" style={{ animationDelay: "0.4s" }} />
+    <div className="self-start flex items-center gap-2 px-3 py-2 bg-chat-ai border border-chat-ai-border rounded-[14px] rounded-bl-[4px]">
+      {name && <span className="font-mono text-[10px] font-medium text-primary">{name}</span>}
+      <div className="flex gap-[3px] items-center">
+        <span
+          className="w-[5px] h-[5px] rounded-full bg-syntra-text3"
+          style={{ animation: "dot-bounce 1.4s ease-in-out infinite" }}
+        />
+        <span
+          className="w-[5px] h-[5px] rounded-full bg-syntra-text3"
+          style={{ animation: "dot-bounce 1.4s ease-in-out infinite", animationDelay: "0.2s" }}
+        />
+        <span
+          className="w-[5px] h-[5px] rounded-full bg-syntra-text3"
+          style={{ animation: "dot-bounce 1.4s ease-in-out infinite", animationDelay: "0.4s" }}
+        />
       </div>
-      {name && <span className="text-xs text-muted-foreground">{name} is typing...</span>}
     </div>
   );
 }

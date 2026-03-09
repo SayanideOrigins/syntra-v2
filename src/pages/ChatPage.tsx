@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { MessageBubble } from "@/components/MessageBubble";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { AICustomizePanel } from "@/components/AICustomizePanel";
@@ -237,30 +235,48 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="bg-card border-b border-border px-3 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/home")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={handleHeaderClick}>
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+      {/* Header */}
+      <header className="bg-surface border-b border-border px-3.5 py-3 flex items-center gap-2.5 relative z-10">
+        <button
+          onClick={() => navigate("/home")}
+          className="w-8 h-8 rounded-[10px] bg-surface-2 border border-border flex items-center justify-center text-syntra-text2 shrink-0 hover:bg-surface-3 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+        </button>
+        <div className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer" onClick={handleHeaderClick}>
+          <div className="w-9 h-9 rounded-full bg-surface-3 border-[1.5px] border-[hsl(var(--border2))] flex items-center justify-center overflow-hidden shrink-0">
             {chatEntity?.profilePicture ? (
               <img src={chatEntity.profilePicture} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-lg">{isGroup ? "👥" : "🤖"}</span>
+              <span className="text-base">{isGroup ? "👥" : "🤖"}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold truncate">{chatEntity?.name || "Chat"}</h2>
-            {isGroup && groupData && (
-              <p className="text-xs text-muted-foreground truncate">
+            <h2 className="font-head text-sm font-bold truncate tracking-[-0.01em]">{chatEntity?.name || "Chat"}</h2>
+            {isGroup && groupData ? (
+              <p className="font-mono text-[11px] text-syntra-text2 truncate">
                 {groupData.members.map((m) => m.name).join(", ")}
               </p>
+            ) : (
+              <div className="flex items-center gap-1 font-mono text-[11px] text-primary">
+                <span
+                  className="w-[5px] h-[5px] rounded-full bg-primary"
+                  style={{ boxShadow: "0 0 6px rgba(34,197,94,0.6)", animation: "pulse-status 2s ease-in-out infinite" }}
+                />
+                Active
+              </div>
             )}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto scrollbar-thin py-3">
+      {/* Messages */}
+      <main
+        className="flex-1 overflow-y-auto scrollbar-thin py-3.5 px-3 flex flex-col gap-1.5"
+        style={{
+          backgroundImage: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34,197,94,0.03) 0%, transparent 60%)",
+        }}
+      >
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} showSenderName={isGroup} onEdit={msg.senderType === "user" ? handleEditMessage : undefined} />
         ))}
@@ -268,17 +284,25 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </main>
 
-      <footer className="bg-card border-t border-border p-3 flex items-center gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-          placeholder="Type a message..."
-          className="flex-1 bg-secondary border-0"
-        />
-        <Button size="icon" onClick={handleSend} disabled={!input.trim()}>
-          <Send className="h-4 w-4" />
-        </Button>
+      {/* Input */}
+      <footer className="bg-surface border-t border-border p-2.5 flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 bg-surface-2 border border-border rounded-[14px] px-3 py-2 focus-within:border-primary/30 transition-colors">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            placeholder="Type a message..."
+            className="flex-1 bg-transparent border-none outline-none text-foreground text-[13px] placeholder:text-syntra-text3"
+          />
+        </div>
+        <button
+          onClick={handleSend}
+          disabled={!input.trim()}
+          className="w-9 h-9 rounded-[11px] bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 hover:scale-105 transition-all cursor-pointer"
+          style={{ boxShadow: "0 2px 10px rgba(34,197,94,0.3)" }}
+        >
+          <Send className="h-[15px] w-[15px] text-black" />
+        </button>
       </footer>
 
       {/* Panels */}
