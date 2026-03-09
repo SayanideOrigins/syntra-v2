@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AIEntity, ResponseMode } from "@/lib/types";
 import { saveAI } from "@/lib/db";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +10,13 @@ interface AICustomizePanelProps {
   ai: AIEntity;
   onUpdated: (ai: AIEntity) => void;
 }
+
+const modes: { value: ResponseMode; label: string }[] = [
+  { value: "regular", label: "Regular" },
+  { value: "humanely", label: "Humanely" },
+  { value: "professional", label: "Professional" },
+  { value: "custom", label: "Custom" },
+];
 
 export function AICustomizePanel({ open, onOpenChange, ai, onUpdated }: AICustomizePanelProps) {
   const [name, setName] = useState(ai.name);
@@ -46,44 +48,56 @@ export function AICustomizePanel({ open, onOpenChange, ai, onUpdated }: AICustom
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-card overflow-y-auto">
+      <SheetContent className="bg-surface border-l border-border overflow-y-auto scrollbar-thin">
         <SheetHeader>
-          <SheetTitle>Customize {ai.name}</SheetTitle>
+          <SheetTitle className="font-head font-bold tracking-[-0.02em]">Customize {ai.name}</SheetTitle>
         </SheetHeader>
-        <div className="space-y-4 mt-4">
+        <div className="flex flex-col gap-3.5 mt-4">
           <div>
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary" />
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] outline-none focus:border-primary/40 transition-colors" />
           </div>
           <div>
-            <Label>Job / Role</Label>
-            <Input value={job} onChange={(e) => setJob(e.target.value)} className="bg-secondary" />
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Job / Role</label>
+            <input value={job} onChange={(e) => setJob(e.target.value)} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] outline-none focus:border-primary/40 transition-colors" />
           </div>
           <div>
-            <Label>Description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="bg-secondary" />
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Description</label>
+            <input value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] outline-none focus:border-primary/40 transition-colors" />
           </div>
           <div>
-            <Label>Custom Prompt</Label>
-            <Textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} rows={3} className="bg-secondary" />
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Custom Prompt</label>
+            <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} rows={3} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] leading-relaxed outline-none focus:border-primary/40 transition-colors resize-none" />
           </div>
           <div>
-            <Label>Personality Notes</Label>
-            <Textarea value={personalityNotes} onChange={(e) => setPersonalityNotes(e.target.value)} rows={2} className="bg-secondary" />
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Personality Notes</label>
+            <textarea value={personalityNotes} onChange={(e) => setPersonalityNotes(e.target.value)} rows={2} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] leading-relaxed outline-none focus:border-primary/40 transition-colors resize-none" />
           </div>
           <div>
-            <Label>Response Mode</Label>
-            <Select value={responseMode} onValueChange={(v) => setResponseMode(v as ResponseMode)}>
-              <SelectTrigger className="bg-secondary"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="regular">Regular</SelectItem>
-                <SelectItem value="humanely">Humanely</SelectItem>
-                <SelectItem value="professional">Professional</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
+            <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Response Mode</label>
+            <div className="flex gap-1">
+              {modes.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setResponseMode(m.value)}
+                  className={`px-[9px] py-1 rounded-full font-mono text-[11px] border transition-all ${
+                    responseMode === m.value
+                      ? "bg-primary border-primary text-black font-semibold"
+                      : "border-border text-syntra-text2 hover:border-[hsl(var(--border2))]"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <Button onClick={handleSave} className="w-full">Save Changes</Button>
+          <button
+            onClick={handleSave}
+            className="w-full py-3 bg-primary rounded-xl font-head text-sm font-bold text-black tracking-[-0.01em] hover:-translate-y-px transition-all"
+            style={{ boxShadow: "0 4px 20px rgba(34,197,94,0.35)" }}
+          >
+            Save Changes
+          </button>
         </div>
       </SheetContent>
     </Sheet>

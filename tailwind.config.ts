@@ -12,7 +12,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Space Grotesk", "sans-serif"],
+        sans: ["DM Sans", "sans-serif"],
+        head: ["Syne", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
@@ -54,6 +55,21 @@ export default {
           ai: "hsl(var(--chat-ai))",
           "user-foreground": "hsl(var(--chat-user-foreground))",
           "ai-foreground": "hsl(var(--chat-ai-foreground))",
+          "user-border": "hsl(var(--chat-user-border))",
+          "ai-border": "hsl(var(--chat-ai-border))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          "2": "hsl(var(--surface2))",
+          "3": "hsl(var(--surface3))",
+        },
+        syntra: {
+          green: "hsl(var(--green))",
+          "green-dim": "hsl(var(--green-dim))",
+          "green-glow": "hsl(var(--green-glow))",
+          text: "hsl(var(--text))",
+          text2: "hsl(var(--text2))",
+          text3: "hsl(var(--text3))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

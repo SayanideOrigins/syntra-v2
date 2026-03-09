@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Copy, Check, Pencil } from "lucide-react";
 import type { ChatMessage } from "@/lib/types";
-import { toast } from "@/hooks/use-toast";
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -35,12 +34,12 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
 
   if (editing) {
     return (
-      <div className="flex justify-end mb-2 px-3">
-        <div className="max-w-[80%] w-full">
+      <div className="flex justify-end mb-1 w-full">
+        <div className="max-w-[78%] w-full">
           <textarea
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="w-full rounded-2xl px-4 py-2 bg-secondary text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-[16px] px-[13px] py-[9px] bg-surface-2 border border-border text-foreground text-[13px] font-light resize-none focus:outline-none focus:border-primary/40 transition-colors"
             rows={3}
             autoFocus
             onKeyDown={(e) => {
@@ -49,8 +48,8 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
             }}
           />
           <div className="flex gap-2 mt-1 justify-end">
-            <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-            <button onClick={handleEditSubmit} className="text-xs text-primary hover:text-primary/80 font-medium">Save</button>
+            <button onClick={() => setEditing(false)} className="text-[11px] text-syntra-text2 hover:text-foreground font-mono">Cancel</button>
+            <button onClick={handleEditSubmit} className="text-[11px] text-primary hover:text-primary/80 font-mono font-medium">Save</button>
           </div>
         </div>
       </div>
@@ -59,48 +58,55 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
 
   return (
     <div
-      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-3 group relative`}
+      className={`flex flex-col ${isUser ? "self-end items-end" : "self-start items-start"} max-w-[78%] relative group`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Sender name in group */}
+      {showSenderName && !isUser && (
+        <p className="font-mono text-[10px] font-semibold text-primary mb-[3px] tracking-[0.05em]">
+          {message.senderName}
+        </p>
+      )}
+
+      {/* Bubble */}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+        className={`rounded-[16px] px-[13px] py-[9px] text-[13px] font-light leading-relaxed border ${
           isUser
-            ? "bg-chat-user text-chat-user-foreground rounded-br-md"
-            : "bg-chat-ai text-chat-ai-foreground rounded-bl-md"
-        }`}
+            ? "bg-chat-user border-chat-user-border rounded-br-[4px]"
+            : "bg-chat-ai border-chat-ai-border rounded-bl-[4px]"
+        } text-foreground`}
       >
-        {showSenderName && !isUser && (
-          <p className="text-xs font-semibold text-primary mb-1">{message.senderName}</p>
+        <p className="whitespace-pre-wrap break-words">{message.message}</p>
+      </div>
+
+      {/* Timestamp */}
+      <div className="flex items-center gap-1 mt-[3px]">
+        {message.isEdited && (
+          <span className="font-mono text-[9px] text-syntra-text3 italic">edited</span>
         )}
-        <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
-        <div className="flex items-center justify-end gap-1 mt-1">
-          {message.isEdited && (
-            <span className="text-[10px] text-muted-foreground italic">edited</span>
-          )}
-          <p className={`text-[10px] ${isUser ? "text-chat-user-foreground/60" : "text-muted-foreground"}`}>
-            {formatTime(message.timestamp)}
-          </p>
-        </div>
+        <span className="font-mono text-[9px] text-syntra-text3">
+          {formatTime(message.timestamp)}
+        </span>
       </div>
 
       {/* Hover controls */}
       {hovered && (
-        <div className={`absolute top-0 ${isUser ? "left-auto right-[calc(80%+8px)]" : "right-auto left-[calc(80%+8px)]"} flex gap-1`}>
+        <div className={`absolute top-0 ${isUser ? "left-0 -translate-x-full -ml-1" : "right-0 translate-x-full ml-1"} flex gap-1`}>
           <button
             onClick={handleCopy}
-            className="p-1.5 rounded-md bg-card border border-border hover:bg-secondary transition-colors"
+            className="p-1.5 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors"
             title="Copy"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+            {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-syntra-text2" />}
           </button>
           {isUser && onEdit && (
             <button
               onClick={() => setEditing(true)}
-              className="p-1.5 rounded-md bg-card border border-border hover:bg-secondary transition-colors"
+              className="p-1.5 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors"
               title="Edit"
             >
-              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+              <Pencil className="h-3 w-3 text-syntra-text2" />
             </button>
           )}
         </div>
