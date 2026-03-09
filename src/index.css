@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,72 +6,54 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 20% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
-    --primary: 152 60% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 90%;
-    --secondary-foreground: 220 20% 10%;
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 152 60% 42%;
-    --accent-foreground: 0 0% 100%;
+    --background: 210 33% 4%;
+    --foreground: 214 40% 93%;
+    --card: 212 28% 7%;
+    --card-foreground: 214 40% 93%;
+    --popover: 212 28% 7%;
+    --popover-foreground: 214 40% 93%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 213 24% 10%;
+    --secondary-foreground: 214 40% 93%;
+    --muted: 213 20% 12%;
+    --muted-foreground: 210 20% 58%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 0%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 87%;
-    --input: 220 13% 87%;
-    --ring: 152 60% 42%;
-    --radius: 0.75rem;
-    --chat-user: 152 60% 42%;
-    --chat-ai: 220 14% 90%;
-    --chat-user-foreground: 0 0% 100%;
-    --chat-ai-foreground: 220 20% 10%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 152 60% 42%;
-  }
+    --border: 0 0% 100% / 0.07;
+    --input: 0 0% 100% / 0.07;
+    --ring: 142 71% 45%;
+    --radius: 1rem;
 
-  .dark {
-    --background: 224 20% 7%;
-    --foreground: 210 20% 92%;
-    --card: 224 18% 10%;
-    --card-foreground: 210 20% 92%;
-    --popover: 224 18% 10%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 152 60% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 224 14% 16%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 224 14% 14%;
-    --muted-foreground: 220 10% 54%;
-    --accent: 152 60% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 224 14% 18%;
-    --input: 224 14% 18%;
-    --ring: 152 60% 45%;
-    --chat-user: 152 55% 30%;
-    --chat-ai: 224 14% 16%;
-    --chat-user-foreground: 0 0% 100%;
-    --chat-ai-foreground: 210 20% 92%;
-    --sidebar-background: 224 18% 10%;
-    --sidebar-foreground: 210 20% 92%;
-    --sidebar-primary: 152 60% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 14% 14%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 224 14% 18%;
-    --sidebar-ring: 152 60% 45%;
+    --chat-user: 150 35% 16%;
+    --chat-ai: 213 24% 10%;
+    --chat-user-foreground: 214 40% 93%;
+    --chat-ai-foreground: 214 40% 93%;
+    --chat-user-border: 142 71% 45% / 0.3;
+    --chat-ai-border: 0 0% 100% / 0.07;
+
+    --surface: 212 28% 7%;
+    --surface2: 213 24% 10%;
+    --surface3: 214 22% 13%;
+    --border2: 0 0% 100% / 0.12;
+    --green: 142 71% 45%;
+    --green-dim: 142 72% 37%;
+    --green-glow: 142 71% 45% / 0.18;
+    --green-glow2: 142 71% 45% / 0.08;
+    --text: 214 40% 93%;
+    --text2: 210 20% 58%;
+    --text3: 207 17% 35%;
+
+    --sidebar-background: 212 28% 7%;
+    --sidebar-foreground: 214 40% 93%;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 213 20% 12%;
+    --sidebar-accent-foreground: 214 40% 93%;
+    --sidebar-border: 0 0% 100% / 0.07;
+    --sidebar-ring: 142 71% 45%;
   }
 }
 
@@ -80,21 +62,44 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    font-family: 'Space Grotesk', sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-color: hsl(var(--border2)) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
+    background: hsl(var(--border2));
     border-radius: 9999px;
   }
+  .font-head {
+    font-family: 'Syne', sans-serif;
+  }
+  .font-body {
+    font-family: 'DM Sans', sans-serif;
+  }
+  .font-mono-label {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Splash animations */
+@keyframes pulse-orb {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+}
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulse-status {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
 }
