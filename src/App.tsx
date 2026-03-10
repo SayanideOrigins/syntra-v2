@@ -8,12 +8,20 @@ import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { initTheme } from "./lib/theme";
 
 const queryClient = new QueryClient();
+
+function ThemeInit() {
+  useEffect(() => { initTheme(); }, []);
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <ThemeInit />
       <Toaster />
       <Sonner />
       <BrowserRouter>

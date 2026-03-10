@@ -36,7 +36,7 @@ export function assembleContext(params: AssembleParams): {
   // Gather prior AI responses for structured context
   const priorResponses = allMessages
     .filter((m) => m.senderType === "ai")
-    .slice(-20) // last 20 AI messages for context window
+    .slice(-20)
     .map((m) => ({ name: m.senderName, content: m.message }));
 
   const systemPrompt = buildFullPrompt({
@@ -53,7 +53,7 @@ export function assembleContext(params: AssembleParams): {
   });
 
   // Build conversation history for the API
-  // Note: userMessage is already in allMessages (saved before this call)
+  // userMessage is already in allMessages (saved before this call) — do NOT push again
   const messages: Msg[] = allMessages.map((m) => ({
     role: m.senderType === "user" ? ("user" as const) : ("assistant" as const),
     content: m.message,
