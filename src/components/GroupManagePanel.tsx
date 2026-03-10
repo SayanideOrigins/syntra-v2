@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { VolumeX, Volume2, Pause, Play, UserMinus } from "lucide-react";
+import { VolumeX, Volume2, Pause, Play, UserMinus, Plus, Search } from "lucide-react";
 import type { AIEntity, Group } from "@/lib/types";
 import { saveGroup, getAllAIs } from "@/lib/db";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +21,8 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
   const [pausedIds, setPausedIds] = useState<string[]>(group.pausedMemberIds);
   const [allAIs, setAllAIs] = useState<AIEntity[]>([]);
   const [memberIds, setMemberIds] = useState<string[]>(group.memberIds);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [addSearch, setAddSearch] = useState("");
 
   useEffect(() => {
     setCustomPrompt(group.customPrompt);
@@ -32,7 +34,9 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
     if (open) getAllAIs().then(setAllAIs);
   }, [group, open]);
 
-  const nonMembers = allAIs.filter((ai) => !memberIds.includes(ai.id));
+  const nonMembers = allAIs
+    .filter((ai) => !memberIds.includes(ai.id))
+    .filter((ai) => !addSearch.trim() || ai.name.toLowerCase().includes(addSearch.toLowerCase()));
 
   const handleSave = async () => {
     const updated: Group = {
@@ -55,7 +59,13 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
     setMutedIds((prev) => prev.filter((x) => x !== id));
     setPausedIds((prev) => prev.filter((x) => x !== id));
   };
-  const addMember = (id: string) => setMemberIds((prev) => [...prev, id]);
+  const addMember = (id: string) => {
+    setMemberIds((prev) => [...prev, id]);
+    setShowAddMenu(false);
+    setAddSearch("");
+  };
+
+  const sliderPercent = (timerOffset / 5000) * 100;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -93,29 +103,49 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
                 );
               })}
             </div>
-          </div>
 
-          {/* Add member */}
-          {nonMembers.length > 0 && (
-            <div>
-              <div className="font-mono text-[10px] text-syntra-text3 uppercase tracking-[0.18em] mb-2">Add AI</div>
-              <div className="bg-surface-2 border border-border rounded-[14px] overflow-hidden">
-                {nonMembers.map((ai) => (
-                  <button
-                    key={ai.id}
-                    onClick={() => addMember(ai.id)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-surface-3 transition-colors text-left"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-surface-3 border border-[hsl(var(--border2))] flex items-center justify-center overflow-hidden shrink-0">
-                      {ai.profilePicture ? <img src={ai.profilePicture} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px]">🤖</span>}
-                    </div>
-                    <span className="text-xs flex-1">{ai.name}</span>
-                    <span className="font-mono text-[10px] text-primary">+ Add</span>
-                  </button>
-                ))}
+            {/* Add Member Button */}
+            <button
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className="w-full mt-2 flex items-center justify-center gap-1.5 py-2.5 bg-transparent border border-border rounded-[12px] text-syntra-text2 font-mono text-[11px] hover:bg-surface-2 hover:text-foreground transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Member
+            </button>
+
+            {/* Add member dropdown */}
+            {showAddMenu && (
+              <div className="mt-2 bg-surface-2 border border-border rounded-[14px] overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+                  <Search className="h-3 w-3 text-syntra-text3" />
+                  <input
+                    value={addSearch}
+                    onChange={(e) => setAddSearch(e.target.value)}
+                    placeholder="Search AIs..."
+                    className="bg-transparent border-none outline-none text-foreground text-[12px] w-full placeholder:text-syntra-text3"
+                    autoFocus
+                  />
+                </div>
+                {nonMembers.length === 0 ? (
+                  <div className="px-3 py-3 text-[11px] text-syntra-text3 text-center">No AIs available</div>
+                ) : (
+                  nonMembers.map((ai) => (
+                    <button
+                      key={ai.id}
+                      onClick={() => addMember(ai.id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-surface-3 transition-colors text-left"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-surface-3 border border-[hsl(var(--border2))] flex items-center justify-center overflow-hidden shrink-0">
+                        {ai.profilePicture ? <img src={ai.profilePicture} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px]">🤖</span>}
+                      </div>
+                      <span className="text-xs flex-1">{ai.name}</span>
+                      <span className="font-mono text-[10px] text-primary">+ Add</span>
+                    </button>
+                  ))
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Group prompt */}
           <div>
@@ -128,19 +158,35 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
             />
           </div>
 
-          {/* Timer offset */}
+          {/* Timer offset - proper styled slider */}
           <div>
-            <div className="flex justify-between mb-1">
+            <div className="flex justify-between mb-2">
               <span className="text-xs text-syntra-text2">Timer Offset</span>
               <span className="font-mono text-[11px] text-primary">{timerOffset}ms</span>
             </div>
-            <input
-              type="range"
-              min={0} max={5000} step={100}
-              value={timerOffset}
-              onChange={(e) => setTimerOffset(Number(e.target.value))}
-              className="w-full accent-primary"
-            />
+            <div className="relative">
+              <div className="h-1 bg-secondary rounded-full">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${sliderPercent}%` }}
+                />
+              </div>
+              <input
+                type="range"
+                min={0} max={5000} step={100}
+                value={timerOffset}
+                onChange={(e) => setTimerOffset(Number(e.target.value))}
+                className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                style={{ height: "20px", marginTop: "-8px" }}
+              />
+              <div
+                className="absolute top-[-6px] w-4 h-4 rounded-full bg-primary pointer-events-none"
+                style={{
+                  left: `calc(${sliderPercent}% - 8px)`,
+                  boxShadow: "0 0 8px hsl(var(--green) / 0.4)",
+                }}
+              />
+            </div>
           </div>
 
           {/* Autonomous */}
@@ -162,7 +208,7 @@ export function GroupManagePanel({ open, onOpenChange, group, members, onUpdated
           <button
             onClick={handleSave}
             className="w-full py-3 bg-primary rounded-xl font-head text-sm font-bold text-black tracking-[-0.01em] hover:-translate-y-px transition-all"
-            style={{ boxShadow: "0 4px 20px rgba(34,197,94,0.35)" }}
+            style={{ boxShadow: "0 4px 20px hsl(var(--green) / 0.35)" }}
           >
             Save Changes
           </button>

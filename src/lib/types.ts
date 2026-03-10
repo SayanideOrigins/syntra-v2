@@ -12,6 +12,9 @@ export interface AIEntity {
   isMuted: boolean;
   isPaused: boolean;
   isHidden?: boolean;
+  isPinned?: boolean;
+  isFavourite?: boolean;
+  isNotificationMuted?: boolean;
   createdAt: number;
 }
 
@@ -26,6 +29,10 @@ export interface Group {
   autonomousEnabled: boolean;
   mutedMemberIds: string[];
   pausedMemberIds: string[];
+  isHidden?: boolean;
+  isPinned?: boolean;
+  isFavourite?: boolean;
+  isNotificationMuted?: boolean;
   createdAt: number;
 }
 
@@ -51,6 +58,9 @@ export type ChatListItem = {
   lastMessage: string;
   lastTimestamp: number;
   type: "ai" | "group";
+  isPinned?: boolean;
+  isFavourite?: boolean;
+  isNotificationMuted?: boolean;
 };
 
 export interface ConversationSettings {
@@ -67,4 +77,22 @@ export interface GroupState {
   pausedMembers: string[];
   autonomousFlag: boolean;
   timerOffset: number;
+}
+
+export interface ThemePreset {
+  name: string;
+  colors: string[];
+}
+
+export interface AppBranding {
+  name: string;
+  splitPoint: number;
+  font: string;
+  alignment: "left" | "center" | "right";
+}
+
+export interface ThemeSettings {
+  preset: string;
+  customColors: string[];
+  branding: AppBranding;
 }
