@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Hand } from "lucide-react";
 import { MessageBubble } from "@/components/MessageBubble";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { AICustomizePanel } from "@/components/AICustomizePanel";
@@ -36,8 +36,10 @@ export default function ChatPage() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLElement>(null);
   const isGroup = type === "group";
   const abortRef = useRef(false);
+  const userScrolledToBottomRef = useRef(true);
 
   useEffect(() => {
     if (!id) return;
@@ -66,6 +68,37 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Track scroll position
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+      userScrolledToBottomRef.current = atBottom;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /** Wait until user scrolls to bottom or max timeout */
+  const waitForScrollOrTimeout = useCallback((): Promise<void> => {
+    if (userScrolledToBottomRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      const maxTimeout = setTimeout(resolve, 8000);
+      const interval = setInterval(() => {
+        if (userScrolledToBottomRef.current || abortRef.current) {
+          clearTimeout(maxTimeout);
+          clearInterval(interval);
+          resolve();
+        }
+      }, 200);
+    });
+  }, []);
+
+  const handleInterrupt = () => {
+    abortRef.current = true;
+  };
 
   const sendPrivateMessage = useCallback(async (userText: string, currentMessages: ChatMessage[], round: number) => {
     if (!aiEntity || !id) return;
@@ -174,8 +207,13 @@ export default function ChatPage() {
         });
       });
 
-      if (timerOffset > 0 && shuffled.indexOf(member) < shuffled.length - 1) {
-        await new Promise((r) => setTimeout(r, timerOffset));
+      // Smart pacing: wait for scroll + timer offset before next AI
+      if (shuffled.indexOf(member) < shuffled.length - 1) {
+        userScrolledToBottomRef.current = false;
+        await waitForScrollOrTimeout();
+        if (timerOffset > 0) {
+          await new Promise((r) => setTimeout(r, timerOffset));
+        }
       }
     }
 
@@ -190,7 +228,7 @@ export default function ChatPage() {
         await sendGroupMessage("", runningMessages, newRound, false, true);
       }
     }
-  }, [groupData, id]);
+  }, [groupData, id, waitForScrollOrTimeout]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -272,6 +310,7 @@ export default function ChatPage() {
 
       {/* Messages */}
       <main
+        ref={scrollContainerRef}
         className="flex-1 overflow-y-auto scrollbar-thin py-3.5 px-3 flex flex-col gap-1.5"
         style={{
           backgroundImage: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34,197,94,0.03) 0%, transparent 60%)",
@@ -283,6 +322,19 @@ export default function ChatPage() {
         {isLoading && <TypingIndicator name={typingName} />}
         <div ref={bottomRef} />
       </main>
+
+      {/* Interrupt button */}
+      {isLoading && isGroup && (
+        <div className="flex justify-center -mt-1 mb-1">
+          <button
+            onClick={handleInterrupt}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-2 border border-border text-syntra-text2 font-mono text-[11px] hover:bg-surface-3 hover:text-foreground transition-all"
+          >
+            <Hand className="h-3 w-3" />
+            Interrupt
+          </button>
+        </div>
+      )}
 
       {/* Input */}
       <footer className="bg-surface border-t border-border p-2.5 flex items-center gap-2">

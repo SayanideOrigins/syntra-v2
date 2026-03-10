@@ -39,13 +39,29 @@ function getDB() {
 export async function getAllAIs(): Promise<AIEntity[]> {
   const db = await getDB();
   const ais = await db.getAll("ais");
-  // Backfill v1 records missing new fields
-  return ais.map((ai) => ({
-    responseMode: "regular" as const,
-    isMuted: false,
-    isPaused: false,
-    ...ai,
-  }));
+  // Backfill v1 records missing new fields, filter out hidden
+  return ais
+    .map((ai) => ({
+      responseMode: "regular" as const,
+      isMuted: false,
+      isPaused: false,
+      ...ai,
+    }))
+    .filter((ai) => !ai.isHidden);
+}
+
+export async function searchAIs(query: string): Promise<AIEntity[]> {
+  const db = await getDB();
+  const ais = await db.getAll("ais");
+  const q = query.toLowerCase();
+  return ais
+    .map((ai) => ({
+      responseMode: "regular" as const,
+      isMuted: false,
+      isPaused: false,
+      ...ai,
+    }))
+    .filter((ai) => ai.name.toLowerCase().includes(q) || ai.description.toLowerCase().includes(q));
 }
 
 export async function getAI(id: string): Promise<AIEntity | undefined> {

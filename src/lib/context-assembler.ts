@@ -53,18 +53,11 @@ export function assembleContext(params: AssembleParams): {
   });
 
   // Build conversation history for the API
+  // Note: userMessage is already in allMessages (saved before this call)
   const messages: Msg[] = allMessages.map((m) => ({
     role: m.senderType === "user" ? ("user" as const) : ("assistant" as const),
-    content:
-      m.senderType === "ai"
-        ? `[${m.senderName}]: ${m.message}`
-        : m.message,
+    content: m.message,
   }));
-
-  // Add current user message if not already in history
-  if (userMessage) {
-    messages.push({ role: "user", content: userMessage });
-  }
 
   return { systemPrompt, messages };
 }

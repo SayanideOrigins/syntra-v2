@@ -31,6 +31,12 @@ function buildBlock1(ai: AIEntity, otherParticipants: string[]): string {
     "- You cannot describe their internal reasoning or intentions.",
     "- You may only write from your own perspective.",
     "- Never refer to yourself in third person.",
+    "- Never write responses on behalf of other participants.",
+    "- Never use '[Name]:' or '(Name):' format anywhere in your response.",
+    "- Never roleplay as another participant, even hypothetically.",
+    "- If no other participants have responded yet, do not speculate what they might say.",
+    "- Other participants are real entities in this conversation. Treat them as such.",
+    "- You are one voice in a group discussion. Stay in your lane.",
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -87,6 +93,7 @@ function buildBlock4(responseMode: ResponseMode, isAutonomous: boolean): string 
     "- Output only your response content.",
     "- Keep responses clear, structured, and efficient.",
     "- Matching or decreasing response length to user input and needs is optional but good if done. Compress for short questions. Expand only if necessary.",
+    "- Never prefix your message with your own name or any label. Output only the response content itself.",
   ];
 
   // Mode-specific rules

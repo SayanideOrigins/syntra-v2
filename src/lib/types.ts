@@ -11,6 +11,7 @@ export interface AIEntity {
   responseMode: ResponseMode;
   isMuted: boolean;
   isPaused: boolean;
+  isHidden?: boolean;
   createdAt: number;
 }
 

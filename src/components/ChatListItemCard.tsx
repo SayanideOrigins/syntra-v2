@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback } from "react";
 import type { ChatListItem } from "@/lib/types";
 
 function formatTimestamp(ts: number) {
@@ -10,15 +11,43 @@ function formatTimestamp(ts: number) {
 interface ChatListItemCardProps {
   item: ChatListItem;
   onClick: () => void;
+  onLongPress?: () => void;
 }
 
-export function ChatListItemCard({ item, onClick }: ChatListItemCardProps) {
+export function ChatListItemCard({ item, onClick, onLongPress }: ChatListItemCardProps) {
   const isAI = item.type === "ai";
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const handlePointerDown = useCallback(() => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      onLongPress?.();
+    }, 500);
+  }, [onLongPress]);
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (!didLongPress.current) onClick();
+  }, [onClick]);
+
+  const handlePointerCancel = useCallback(() => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onLongPress?.();
+  }, [onLongPress]);
 
   return (
     <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-[11px] hover:bg-surface-2 transition-colors text-left relative"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onContextMenu={handleContextMenu}
+      className="w-full flex items-center gap-3 px-4 py-[11px] hover:bg-surface-2 transition-colors text-left relative select-none"
     >
       {/* Separator line */}
       <div className="absolute bottom-0 left-4 right-4 h-px bg-border" />
