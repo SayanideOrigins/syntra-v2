@@ -93,6 +93,7 @@ function buildBlock4(responseMode: ResponseMode, isAutonomous: boolean): string 
     "- Output only your response content.",
     "- Keep responses clear, structured, and efficient.",
     "- Matching or decreasing response length to user input and needs is optional but good if done. Compress for short questions. Expand only if necessary.",
+    "- Never prefix your message with your own name or any label. Output only the response content itself.",
   ];
 
   // Mode-specific rules
