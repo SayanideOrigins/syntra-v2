@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Users, Search, Settings } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { ChatListItemCard } from "@/components/ChatListItemCard";
 import { CreateAIModal } from "@/components/CreateAIModal";
 import { CreateGroupModal } from "@/components/CreateGroupModal";
-import { getAllAIs, getAllGroups, getLastMessage } from "@/lib/db";
-import type { ChatListItem } from "@/lib/types";
+import { AIEditSheet } from "@/components/AIEditSheet";
+import { getAllAIs, getAllGroups, getLastMessage, searchAIs } from "@/lib/db";
+import type { ChatListItem, AIEntity } from "@/lib/types";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -14,9 +14,15 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [showCreateAI, setShowCreateAI] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [editingAI, setEditingAI] = useState<AIEntity | null>(null);
+  const [allAIsMap, setAllAIsMap] = useState<Map<string, AIEntity>>(new Map());
 
   const loadItems = useCallback(async () => {
     const [ais, groups] = await Promise.all([getAllAIs(), getAllGroups()]);
+    const map = new Map<string, AIEntity>();
+    ais.forEach((ai) => map.set(ai.id, ai));
+    setAllAIsMap(map);
+
     const aiItems: ChatListItem[] = await Promise.all(
       ais.map(async (ai) => {
         const last = await getLastMessage(ai.id);
@@ -45,9 +51,47 @@ const Index = () => {
 
   useEffect(() => { loadItems(); }, [loadItems]);
 
-  const filtered = search.trim()
-    ? items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
-    : items;
+  // When searching, use searchAIs to include hidden AIs
+  const [searchResults, setSearchResults] = useState<ChatListItem[]>([]);
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const q = search.toLowerCase();
+    (async () => {
+      const ais = await searchAIs(q);
+      const map = new Map<string, AIEntity>();
+      ais.forEach((ai) => map.set(ai.id, ai));
+
+      const aiItems: ChatListItem[] = await Promise.all(
+        ais.map(async (ai) => {
+          const last = await getLastMessage(ai.id);
+          return {
+            id: ai.id, name: ai.name, description: ai.description,
+            profilePicture: ai.profilePicture,
+            lastMessage: last?.message || "", lastTimestamp: last?.timestamp || ai.createdAt,
+            type: "ai" as const,
+          };
+        })
+      );
+      // Also search groups from existing items
+      const groupResults = items.filter((i) => i.type === "group" && i.name.toLowerCase().includes(q));
+      setSearchResults([...aiItems, ...groupResults].sort((a, b) => b.lastTimestamp - a.lastTimestamp));
+      // Update map for long-press
+      ais.forEach((ai) => allAIsMap.set(ai.id, ai));
+      setAllAIsMap(new Map(allAIsMap));
+    })();
+  }, [search]);
+
+  const filtered = search.trim() ? searchResults : items;
+
+  const handleLongPress = (item: ChatListItem) => {
+    if (item.type === "ai") {
+      const ai = allAIsMap.get(item.id);
+      if (ai) setEditingAI(ai);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -108,6 +152,7 @@ const Index = () => {
                 key={item.id}
                 item={item}
                 onClick={() => navigate(`/chat/${item.type}/${item.id}`)}
+                onLongPress={() => handleLongPress(item)}
               />
             ))}
           </div>
@@ -125,6 +170,14 @@ const Index = () => {
 
       <CreateAIModal open={showCreateAI} onOpenChange={setShowCreateAI} onCreated={loadItems} />
       <CreateGroupModal open={showCreateGroup} onOpenChange={setShowCreateGroup} onCreated={loadItems} />
+      {editingAI && (
+        <AIEditSheet
+          open={!!editingAI}
+          onOpenChange={(open) => { if (!open) setEditingAI(null); }}
+          ai={editingAI}
+          onUpdated={loadItems}
+        />
+      )}
     </div>
   );
 };

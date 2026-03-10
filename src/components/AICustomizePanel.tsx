@@ -25,6 +25,7 @@ export function AICustomizePanel({ open, onOpenChange, ai, onUpdated }: AICustom
   const [customPrompt, setCustomPrompt] = useState(ai.customPrompt);
   const [personalityNotes, setPersonalityNotes] = useState(ai.personalityNotes);
   const [responseMode, setResponseMode] = useState<ResponseMode>(ai.responseMode || "regular");
+  const [profilePicture, setProfilePicture] = useState<string | null>(ai.profilePicture);
 
   useEffect(() => {
     setName(ai.name);
@@ -33,12 +34,22 @@ export function AICustomizePanel({ open, onOpenChange, ai, onUpdated }: AICustom
     setCustomPrompt(ai.customPrompt);
     setPersonalityNotes(ai.personalityNotes);
     setResponseMode(ai.responseMode || "regular");
+    setProfilePicture(ai.profilePicture);
   }, [ai]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setProfilePicture(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async () => {
     const updated: AIEntity = {
       ...ai, name: name.trim() || ai.name, job: job.trim(), description: description.trim(),
       customPrompt: customPrompt.trim(), personalityNotes: personalityNotes.trim(), responseMode,
+      profilePicture,
     };
     await saveAI(updated);
     onUpdated(updated);
@@ -53,6 +64,23 @@ export function AICustomizePanel({ open, onOpenChange, ai, onUpdated }: AICustom
           <SheetTitle className="font-head font-bold tracking-[-0.02em]">Customize {ai.name}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-3.5 mt-4">
+          {/* Profile Picture */}
+          <div className="flex justify-center">
+            <div
+              className="w-16 h-16 rounded-full bg-surface-2 border-[1.5px] border-dashed border-primary/40 flex flex-col items-center justify-center cursor-pointer shrink-0 hover:bg-surface-3 hover:border-primary/60 transition-all gap-0.5 overflow-hidden"
+              onClick={() => document.getElementById("ai-customize-pic-upload")?.click()}
+            >
+              {profilePicture ? (
+                <img src={profilePicture} alt="AI" className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  <span className="text-[22px]">🤖</span>
+                  <span className="font-mono text-[10px] text-primary">+ photo</span>
+                </>
+              )}
+            </div>
+            <input id="ai-customize-pic-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          </div>
           <div>
             <label className="font-mono text-[11px] text-syntra-text2 uppercase tracking-[0.1em] mb-1.5 block">Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-surface-2 border border-border rounded-[10px] px-3 py-[9px] text-foreground text-[13px] outline-none focus:border-primary/40 transition-colors" />
