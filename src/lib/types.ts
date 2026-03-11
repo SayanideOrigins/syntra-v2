@@ -68,6 +68,7 @@ export interface ConversationSettings {
   markdownEnabled: boolean;
   autonomousEnabled: boolean;
   defaultTimerOffset: number;
+  messageFontSize?: number;
 }
 
 export interface GroupState {

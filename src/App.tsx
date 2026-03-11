@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SplashScreen from "./pages/SplashScreen";
+import AuthPage from "./pages/AuthPage";
+import ResetPassword from "./pages/ResetPassword";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -27,9 +30,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<SplashScreen />} />
-          <Route path="/home" element={<Index />} />
-          <Route path="/chat/:type/:id" element={<ChatPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/chat/:type/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: ConversationSettings = {
   markdownEnabled: true,
   autonomousEnabled: false,
   defaultTimerOffset: 1500,
+  messageFontSize: 13,
 };
 
 export function getSettings(): ConversationSettings {
