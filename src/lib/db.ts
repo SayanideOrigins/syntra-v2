@@ -11,11 +11,22 @@ interface SyntraDB extends DBSchema {
   };
 }
 
+let currentUserId: string | null = null;
 let dbPromise: Promise<IDBPDatabase<SyntraDB>> | null = null;
 
+export function setDbUserId(userId: string) {
+  if (currentUserId !== userId) {
+    currentUserId = userId;
+    dbPromise = null;
+  }
+}
+
 function getDB() {
+  if (!currentUserId) {
+    throw new Error("DB not initialized: user not authenticated");
+  }
   if (!dbPromise) {
-    dbPromise = openDB<SyntraDB>("syntra", 2, {
+    dbPromise = openDB<SyntraDB>(`syntra-${currentUserId}`, 2, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           const aiStore = db.createObjectStore("ais", { keyPath: "id" });

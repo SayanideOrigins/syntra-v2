@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getAllAIs, saveAI } from "@/lib/db";
-import { getThemeSettings, saveThemeSettings, applyTheme, resetThemeToDefaults, THEME_PRESETS } from "@/lib/theme";
+import { getThemeSettings, saveThemeSettings, applyTheme, THEME_PRESETS } from "@/lib/theme";
 import { AppLogo } from "@/components/AppLogo";
+import { supabase } from "@/integrations/supabase/client";
 import type { ConversationSettings, ResponseMode, AIEntity, ThemeSettings, AppBranding } from "@/lib/types";
 
 const FONT_OPTIONS = ["Syne", "Space Grotesk", "DM Sans", "Inter", "monospace"];
+const FONT_SIZES = [
+  { label: "Small", value: 12 },
+  { label: "Medium", value: 13 },
+  { label: "Large", value: 15 },
+];
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -32,7 +38,6 @@ export default function SettingsPage() {
     setAIs((prev) => prev.map((a) => a.id === aiId ? updated : a));
   };
 
-  // Theme live preview
   const updateThemeColors = (colors: string[], presetName?: string) => {
     const next = { ...themeSettings, customColors: colors, ...(presetName ? { preset: presetName } : {}) };
     setThemeSettings(next);
@@ -56,13 +61,17 @@ export default function SettingsPage() {
     applyTheme(savedThemeRef.current.customColors);
   };
 
-  // Revert on unmount if not saved
   useEffect(() => {
     return () => {
       const current = getThemeSettings();
       applyTheme(current.customColors);
     };
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const modes: { value: ResponseMode; label: string }[] = [
     { value: "regular", label: "Regular" },
@@ -74,8 +83,8 @@ export default function SettingsPage() {
   const sliderPercent = (settings.defaultTimerOffset / 5000) * 100;
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="bg-surface border-b border-border px-3.5 py-3.5 flex items-center gap-2.5">
+    <div className="flex flex-col h-full bg-background">
+      <header className="bg-surface border-b border-border px-3.5 py-3.5 flex items-center gap-2.5 shrink-0">
         <button
           onClick={() => { revertTheme(); navigate("/home"); }}
           className="w-8 h-8 rounded-[10px] bg-surface-2 border border-border flex items-center justify-center text-syntra-text2 shrink-0 hover:bg-surface-3 transition-colors"
@@ -85,7 +94,7 @@ export default function SettingsPage() {
         <h2 className="font-head text-base font-bold tracking-[-0.02em]">Settings</h2>
       </header>
 
-      <main className="flex-1 overflow-y-auto scrollbar-thin p-3.5 flex flex-col gap-2.5">
+      <main className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-3.5 flex flex-col gap-2.5">
         {/* Appearance */}
         <div className="font-mono text-[10px] text-syntra-text3 uppercase tracking-[0.18em] pt-1 pb-1.5">
           Appearance
@@ -120,9 +129,28 @@ export default function SettingsPage() {
                 type="color"
                 value={themeSettings.customColors[0] || "#22c55e"}
                 onChange={(e) => updateThemeColors([e.target.value], "Custom")}
-                className="w-10 h-10 rounded-[8px] border border-border cursor-pointer bg-transparent"
               />
               <span className="font-mono text-[11px] text-syntra-text2">{themeSettings.customColors[0] || "#22c55e"}</span>
+            </div>
+          </div>
+
+          {/* Message Font Size */}
+          <div>
+            <p className="text-[12px] text-syntra-text2 mb-2">Message Font Size</p>
+            <div className="flex gap-1">
+              {FONT_SIZES.map((fs) => (
+                <button
+                  key={fs.value}
+                  onClick={() => update({ messageFontSize: fs.value })}
+                  className={`px-[9px] py-1 rounded-full font-mono text-[11px] border transition-all ${
+                    (settings.messageFontSize || 13) === fs.value
+                      ? "bg-primary border-primary text-black font-semibold"
+                      : "border-border text-syntra-text2 hover:border-[hsl(var(--border2))]"
+                  }`}
+                >
+                  {fs.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -300,30 +328,17 @@ export default function SettingsPage() {
         </div>
         <div className="bg-surface-2 border border-border rounded-[14px] overflow-hidden">
           <div className="p-3 pb-4">
-            <div className="flex justify-between text-[12px] mb-2">
+            <div className="flex justify-between text-[12px] mb-3">
               <span className="text-syntra-text2">Timer Offset</span>
               <span className="font-mono text-[11px] text-primary">{settings.defaultTimerOffset}ms</span>
             </div>
-            <div className="relative">
-              <div className="h-1 bg-secondary rounded-full">
-                <div className="h-full bg-primary rounded-full" style={{ width: `${sliderPercent}%` }} />
-              </div>
-              <input
-                type="range"
-                min={0} max={5000} step={100}
-                value={settings.defaultTimerOffset}
-                onChange={(e) => update({ defaultTimerOffset: Number(e.target.value) })}
-                className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                style={{ height: "20px", marginTop: "-8px" }}
-              />
-              <div
-                className="absolute top-[-6px] w-4 h-4 rounded-full bg-primary pointer-events-none"
-                style={{
-                  left: `calc(${sliderPercent}% - 8px)`,
-                  boxShadow: "0 0 8px hsl(var(--green) / 0.4)",
-                }}
-              />
-            </div>
+            <input
+              type="range"
+              min={0} max={5000} step={100}
+              value={settings.defaultTimerOffset}
+              onChange={(e) => update({ defaultTimerOffset: Number(e.target.value) })}
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -358,7 +373,19 @@ export default function SettingsPage() {
           </>
         )}
 
-        <div className="h-8" />
+        {/* Sign Out */}
+        <div className="font-mono text-[10px] text-syntra-text3 uppercase tracking-[0.18em] pt-2 pb-1.5">
+          Account
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-destructive/10 border border-destructive/30 rounded-[14px] text-destructive font-medium text-[13px] hover:bg-destructive/20 transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </button>
+
+        <div className="h-16" />
       </main>
     </div>
   );

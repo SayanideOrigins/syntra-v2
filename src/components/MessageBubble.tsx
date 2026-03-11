@@ -10,9 +10,10 @@ interface MessageBubbleProps {
   message: ChatMessage;
   showSenderName?: boolean;
   onEdit?: (msgId: string, newText: string) => void;
+  fontSize?: number;
 }
 
-export function MessageBubble({ message, showSenderName, onEdit }: MessageBubbleProps) {
+export function MessageBubble({ message, showSenderName, onEdit, fontSize = 13 }: MessageBubbleProps) {
   const isUser = message.senderType === "user";
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -35,31 +36,23 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
 
     targetTextRef.current = message.message;
 
-    // If text grew (streaming), animate from where we left off
     if (message.message.length > prevMessageRef.current.length || prevMessageRef.current === "") {
       setShowCursor(true);
-
       if (!typewriterIntervalRef.current) {
         typewriterIntervalRef.current = setInterval(() => {
           if (displayedCountRef.current < targetTextRef.current.length) {
             displayedCountRef.current += 1;
             setDisplayText(targetTextRef.current.slice(0, displayedCountRef.current));
-          } else {
-            // Caught up; will re-check on next tick
           }
         }, 18);
       }
     }
 
     prevMessageRef.current = message.message;
-
-    return () => {};
   }, [message.message, isUser]);
 
-  // Clean up interval and hide cursor when streaming is done
   useEffect(() => {
     if (isUser) return;
-    // Check if we've caught up and no more streaming
     const checkDone = setInterval(() => {
       if (displayedCountRef.current >= targetTextRef.current.length && targetTextRef.current.length > 0) {
         if (typewriterIntervalRef.current) {
@@ -74,7 +67,6 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
     return () => clearInterval(checkDone);
   }, [isUser]);
 
-  // On unmount, clean up
   useEffect(() => {
     return () => {
       if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
@@ -122,7 +114,7 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
 
   return (
     <div
-      className={`flex flex-col ${isUser ? "self-end items-end" : "self-start items-start"} max-w-[78%] relative group`}
+      className={`flex flex-col ${isUser ? "self-end items-end" : "self-start items-start"} max-w-[78%] relative`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -132,19 +124,45 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
         </p>
       )}
 
-      <div
-        className={`rounded-[16px] px-[13px] py-[9px] text-[13px] font-light leading-relaxed border ${
-          isUser
-            ? "bg-chat-user border-chat-user-border rounded-br-[4px]"
-            : "bg-chat-ai border-chat-ai-border rounded-bl-[4px]"
-        } text-foreground`}
-      >
-        <p className="whitespace-pre-wrap break-words">
-          {shownText}
-          {showCursor && !isUser && (
-            <span className="inline-block w-[2px] h-[14px] bg-primary ml-[1px] align-middle" style={{ animation: "pulse-status 1s ease-in-out infinite" }} />
-          )}
-        </p>
+      {/* Wrapper: bubble + hover controls side by side so mouse doesn't leave */}
+      <div className="flex items-start gap-1">
+        {/* Hover controls - LEFT side for user messages */}
+        {isUser && hovered && (
+          <div className="flex gap-1 shrink-0 mt-1">
+            {onEdit && (
+              <button onClick={() => setEditing(true)} className="p-2 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors" title="Edit">
+                <Pencil className="h-3 w-3 text-syntra-text2" />
+              </button>
+            )}
+            <button onClick={handleCopy} className="p-2 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors" title="Copy">
+              {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-syntra-text2" />}
+            </button>
+          </div>
+        )}
+
+        <div
+          className={`rounded-[16px] px-[13px] py-[9px] font-light leading-relaxed border ${
+            isUser
+              ? "bg-chat-user border-chat-user-border rounded-br-[4px]"
+              : "bg-chat-ai border-chat-ai-border rounded-bl-[4px]"
+          } text-foreground`}
+        >
+          <p className="whitespace-pre-wrap break-words" style={{ fontSize: `${fontSize}px` }}>
+            {shownText}
+            {showCursor && !isUser && (
+              <span className="inline-block w-[2px] h-[14px] bg-primary ml-[1px] align-middle" style={{ animation: "pulse-status 1s ease-in-out infinite" }} />
+            )}
+          </p>
+        </div>
+
+        {/* Hover controls - RIGHT side for AI messages */}
+        {!isUser && hovered && (
+          <div className="flex gap-1 shrink-0 mt-1">
+            <button onClick={handleCopy} className="p-2 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors" title="Copy">
+              {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-syntra-text2" />}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1 mt-[3px]">
@@ -155,19 +173,6 @@ export function MessageBubble({ message, showSenderName, onEdit }: MessageBubble
           {formatTime(message.timestamp)}
         </span>
       </div>
-
-      {hovered && (
-        <div className={`absolute top-0 ${isUser ? "left-0 -translate-x-full -ml-1" : "right-0 translate-x-full ml-1"} flex gap-1`}>
-          <button onClick={handleCopy} className="p-1.5 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors" title="Copy">
-            {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-syntra-text2" />}
-          </button>
-          {isUser && onEdit && (
-            <button onClick={() => setEditing(true)} className="p-1.5 rounded-[8px] bg-surface-2 border border-border hover:bg-surface-3 transition-colors" title="Edit">
-              <Pencil className="h-3 w-3 text-syntra-text2" />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -25,8 +25,9 @@ const Index = () => {
   const [allAIsMap, setAllAIsMap] = useState<Map<string, AIEntity>>(new Map());
   const [allGroupsMap, setAllGroupsMap] = useState<Map<string, Group>>(new Map());
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: ChatListItem } | null>(null);
-  // Desktop two-panel
   const [selectedChat, setSelectedChat] = useState<{ type: string; id: string } | null>(null);
+  // Counter to force ChatPage re-mount on clear
+  const [chatKey, setChatKey] = useState(0);
 
   const loadItems = useCallback(async () => {
     const [ais, groups] = await Promise.all([getAllAIs(), getAllGroups()]);
@@ -62,7 +63,6 @@ const Index = () => {
       })
     );
     const all = [...aiItems, ...groupItems].sort((a, b) => {
-      // Pinned first
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return b.lastTimestamp - a.lastTimestamp;
@@ -120,7 +120,6 @@ const Index = () => {
     if (e) {
       setContextMenu({ x: e.x, y: e.y, item });
     } else {
-      // Fallback: open edit sheet directly
       openEditSheet(item);
     }
   };
@@ -173,11 +172,15 @@ const Index = () => {
     } else if (action === "clear") {
       await clearMessages(item.id);
       loadItems();
+      // Force re-mount of ChatPage if this chat is currently open
+      if (selectedChat?.id === item.id) {
+        setChatKey((k) => k + 1);
+      }
     }
   };
 
   const chatListPanel = (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background relative">
       {/* Header */}
       <header className="bg-surface border-b border-border px-4 pt-5 pb-3">
         <div className="flex items-center justify-between mb-3.5">
@@ -238,10 +241,10 @@ const Index = () => {
         )}
       </main>
 
-      {/* FAB */}
+      {/* FAB - absolute within left panel on desktop, fixed on mobile */}
       <button
         onClick={() => setShowCreateAI(true)}
-        className="fixed bottom-5 right-4 w-[52px] h-[52px] rounded-full bg-primary flex items-center justify-center z-50 border-none cursor-pointer hover:scale-105 transition-all"
+        className={`${isMobile ? "fixed bottom-6 right-6" : "absolute bottom-5 right-4"} w-[52px] h-[52px] rounded-full bg-primary flex items-center justify-center z-50 border-none cursor-pointer hover:scale-105 transition-all`}
         style={{ boxShadow: "0 4px 20px hsl(var(--green) / 0.4)" }}
       >
         <Plus className="h-[22px] w-[22px] text-black" />
@@ -286,7 +289,7 @@ const Index = () => {
         <div className="flex-1 h-full">
           {selectedChat ? (
             <ChatPage
-              key={`${selectedChat.type}-${selectedChat.id}`}
+              key={`${selectedChat.type}-${selectedChat.id}-${chatKey}`}
               overrideType={selectedChat.type}
               overrideId={selectedChat.id}
               embedded

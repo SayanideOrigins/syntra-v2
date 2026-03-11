@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Hand } from "lucide-react";
 import { MessageBubble } from "@/components/MessageBubble";
 import { TypingIndicator } from "@/components/TypingIndicator";
-import { AICustomizePanel } from "@/components/AICustomizePanel";
+import { ProfileInfoView } from "@/components/ProfileInfoView";
 import { GroupManagePanel } from "@/components/GroupManagePanel";
 import {
   getAI, getGroup, getMessages, saveMessage, getAllAIs,
@@ -42,15 +42,17 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
   const [aiEntity, setAiEntity] = useState<AIEntity | null>(null);
   const [groupData, setGroupData] = useState<{ group: Group; members: AIEntity[] } | null>(null);
   const [roundNumber, setRoundNumber] = useState(1);
-  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isGroup = type === "group";
   const abortRef = useRef(false);
   const sentinelVisibleRef = useRef(true);
+  const lastRoundStarterIdRef = useRef<string | null>(null);
 
   // Track sentinel visibility via IntersectionObserver
   useEffect(() => {
@@ -104,21 +106,25 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Auto-focus input on keypress (Discord-style)
+  // Auto-focus input on keypress — scoped to chat container
   useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (["Escape", "Enter", "Backspace", "Tab", "Delete"].includes(e.key)) return;
-      if (e.key.startsWith("Arrow") || e.key.startsWith("F") && e.key.length <= 3) return;
-      if (e.key.length !== 1) return; // non-printable
+      if (e.key.startsWith("Arrow") || (e.key.startsWith("F") && e.key.length <= 3)) return;
+      if (e.key.length !== 1) return;
       if (document.activeElement === inputRef.current) return;
+      // Only focus if activeElement is inside the chat container or nothing is focused
+      const active = document.activeElement;
+      if (active && active !== document.body && !container.contains(active)) return;
       inputRef.current?.focus();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /** Wait until sentinel is visible or max timeout — only if sentinel is out of view */
   const waitForScrollOrTimeout = useCallback((): Promise<void> => {
     if (sentinelVisibleRef.current) return Promise.resolve();
     return new Promise((resolve) => {
@@ -161,10 +167,11 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
       systemPrompt, messages: apiMessages,
       onDelta: (chunk) => {
         accumulated += chunk;
+        const acc = accumulated;
         setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.id === aiMsgId) return prev.map((m) => m.id === aiMsgId ? { ...m, message: accumulated } : m);
-          return [...prev, makeMsg({ id: aiMsgId, chatId: id, chatType: "private", senderType: "ai", senderName: aiEntity.name, message: accumulated, timestamp: Date.now() }, { roundNumber: round })];
+          const exists = prev.find((m) => m.id === aiMsgId);
+          if (exists) return prev.map((m) => m.id === aiMsgId ? { ...m, message: acc } : m);
+          return [...prev, makeMsg({ id: aiMsgId, chatId: id, chatType: "private", senderType: "ai", senderName: aiEntity.name, message: acc, timestamp: Date.now() }, { roundNumber: round })];
         });
       },
       onDone: async () => {
@@ -196,11 +203,45 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
              !groupData.group.pausedMemberIds.includes(m.id) && !m.isMuted && !m.isPaused
     );
 
-    const shuffled = [...activeMembers].sort(() => Math.random() - 0.5);
+    // Mention detection: scan userText for @Name mentions
+    let ordered: AIEntity[];
+    if (userText && !isAutonomousRound) {
+      const mentionRegex = /@(\S+)/g;
+      const mentionedNames: string[] = [];
+      let match;
+      while ((match = mentionRegex.exec(userText)) !== null) {
+        mentionedNames.push(match[1].toLowerCase());
+      }
+      if (mentionedNames.length > 0) {
+        const mentioned = activeMembers.filter((m) =>
+          mentionedNames.some((name) => m.name.toLowerCase().includes(name))
+        );
+        const rest = activeMembers.filter((m) => !mentioned.includes(m));
+        ordered = [...mentioned, ...rest.sort(() => Math.random() - 0.5)];
+      } else {
+        ordered = [...activeMembers].sort(() => Math.random() - 0.5);
+      }
+    } else {
+      ordered = [...activeMembers].sort(() => Math.random() - 0.5);
+    }
+
+    // For autonomous rounds, ensure first speaker != last round's starter
+    if (isAutonomousRound && lastRoundStarterIdRef.current && ordered.length > 1) {
+      let attempts = 0;
+      while (ordered[0].id === lastRoundStarterIdRef.current && attempts < 10) {
+        ordered = [...ordered.sort(() => Math.random() - 0.5)];
+        attempts++;
+      }
+    }
+
+    if (ordered.length > 0) {
+      lastRoundStarterIdRef.current = ordered[0].id;
+    }
+
     let runningMessages = [...currentMessages];
 
-    for (let i = 0; i < shuffled.length; i++) {
-      const member = shuffled[i];
+    for (let i = 0; i < ordered.length; i++) {
+      const member = ordered[i];
       if (abortRef.current) break;
       setTypingName(member.name);
 
@@ -222,19 +263,19 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
       const aiMsgId = crypto.randomUUID();
 
       // Wait for this member's full response before moving to next
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         streamChat({
           systemPrompt, messages: apiMessages,
           onDelta: (chunk) => {
             accumulated += chunk;
-            const msgObj = makeMsg(
-              { id: aiMsgId, chatId: id, chatType: "group", senderType: "ai", senderName: member.name, message: accumulated, timestamp: Date.now() },
-              { roundNumber: round, isAutonomous: isAutonomousRound }
-            );
+            const acc = accumulated;
             setMessages((prev) => {
               const exists = prev.find((m) => m.id === aiMsgId);
-              if (exists) return prev.map((m) => m.id === aiMsgId ? { ...m, message: accumulated } : m);
-              return [...prev, msgObj];
+              if (exists) return prev.map((m) => m.id === aiMsgId ? { ...m, message: acc } : m);
+              return [...prev, makeMsg(
+                { id: aiMsgId, chatId: id, chatType: "group", senderType: "ai", senderName: member.name, message: acc, timestamp: Date.now() },
+                { roundNumber: round, isAutonomous: isAutonomousRound }
+              )];
             });
           },
           onDone: async () => {
@@ -244,6 +285,8 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
             );
             await saveMessage(finalMsg);
             runningMessages = [...runningMessages, finalMsg];
+            // Sync state with runningMessages so next member sees all prior messages
+            setMessages([...runningMessages]);
             resolve();
           },
           onError: (err) => {
@@ -254,7 +297,7 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
       });
 
       // Smart pacing: only wait if sentinel is out of view
-      if (i < shuffled.length - 1 && !abortRef.current) {
+      if (i < ordered.length - 1 && !abortRef.current) {
         await waitForScrollOrTimeout();
         if (timerOffset > 0) {
           await new Promise((r) => setTimeout(r, timerOffset));
@@ -267,7 +310,7 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
     return runningMessages;
   }, [groupData, id, waitForScrollOrTimeout]);
 
-  // Autonomous rounds as a separate function receiving fresh messages
+  // Autonomous rounds receiving fresh messages
   const runAutonomousRounds = useCallback(async (currentMessages: ChatMessage[], baseRound: number) => {
     if (!groupData) return;
     const settings = getSettings();
@@ -329,12 +372,39 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
   };
 
   const handleHeaderClick = () => {
-    if (isGroup) setShowGroupPanel(true);
-    else setShowAIPanel(true);
+    setShowProfile(true);
   };
 
+  const handleProfileUpdated = (entity: AIEntity | Group) => {
+    if (isGroup) {
+      const group = entity as Group;
+      setGroupData((prev) => prev ? { ...prev, group } : null);
+      setChatEntity({ name: group.name, profilePicture: group.profilePicture });
+    } else {
+      const ai = entity as AIEntity;
+      setAiEntity(ai);
+      setChatEntity({ name: ai.name, profilePicture: ai.profilePicture });
+    }
+  };
+
+  // Profile info view
+  if (showProfile) {
+    return (
+      <ProfileInfoView
+        type={isGroup ? "group" : "ai"}
+        entity={isGroup ? groupData?.group : aiEntity}
+        members={isGroup ? groupData?.members : undefined}
+        onBack={() => setShowProfile(false)}
+        onUpdated={handleProfileUpdated}
+        embedded={embedded}
+      />
+    );
+  }
+
+  const settings = getSettings();
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div ref={chatContainerRef} className="flex flex-col h-full bg-background">
       {/* Header */}
       <header className="bg-surface border-b border-border px-3.5 py-3 flex items-center gap-2.5 relative z-10">
         {!embedded && (
@@ -378,12 +448,18 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
         className="flex-1 overflow-y-auto scrollbar-thin py-3.5 px-3 flex flex-col gap-1.5"
         style={{
           backgroundImage: "radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--green) / 0.03) 0%, transparent 60%)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 60px), transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 60px), transparent 100%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)",
         }}
       >
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} showSenderName={isGroup} onEdit={msg.senderType === "user" ? handleEditMessage : undefined} />
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            showSenderName={isGroup}
+            onEdit={msg.senderType === "user" ? handleEditMessage : undefined}
+            fontSize={settings.messageFontSize}
+          />
         ))}
         {isLoading && <TypingIndicator name={typingName} />}
         <div ref={sentinelRef} className="h-px" />
@@ -425,18 +501,7 @@ export default function ChatPage({ overrideType, overrideId, embedded }: ChatPag
         </button>
       </footer>
 
-      {/* Panels */}
-      {aiEntity && (
-        <AICustomizePanel
-          open={showAIPanel}
-          onOpenChange={setShowAIPanel}
-          ai={aiEntity}
-          onUpdated={(updated) => {
-            setAiEntity(updated);
-            setChatEntity({ name: updated.name, profilePicture: updated.profilePicture });
-          }}
-        />
-      )}
+      {/* Group manage panel */}
       {groupData && (
         <GroupManagePanel
           open={showGroupPanel}
