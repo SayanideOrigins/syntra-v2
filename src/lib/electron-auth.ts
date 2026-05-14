@@ -49,6 +49,7 @@ export async function signInWithGoogleElectron(): Promise<void> {
   // Open the URL inside the Electron window and wait for the redirect.
   const result = await window.electronAPI.googleSignIn(data.url);
   if (!result.ok) throw new Error(result.error);
+  if (result.ok !== true) throw new Error("OAuth failed");
 
   // Supabase implicit flow puts tokens in the URL hash.
   const hash = result.hash.startsWith("#") ? result.hash.slice(1) : result.hash;
