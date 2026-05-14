@@ -10,9 +10,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Set up listener BEFORE getSession per Supabase best practices
+    const ensureProfile = async (userId: string, email: string | null | undefined) => {
+      try {
+        await supabase
+          .from("profiles")
+          .upsert({ id: userId, email: email ?? null }, { onConflict: "id", ignoreDuplicates: true });
+      } catch { /* best effort */ }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.id) {
         setDbUserId(session.user.id);
+        ensureProfile(session.user.id, session.user.email);
       }
       setSession(session);
       setLoading(false);
