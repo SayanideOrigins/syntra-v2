@@ -95,7 +95,7 @@ export default function AuthPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast({ title: "Google sign in failed", description: String(result.error), variant: "destructive" });
+        toast({ ...friendlyAuthError(result.error), variant: "destructive" });
       }
     } catch (e) {
       toast({ title: "Google sign in failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
