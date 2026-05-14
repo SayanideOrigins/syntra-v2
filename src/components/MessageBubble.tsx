@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Copy, Check, Pencil } from "lucide-react";
 import type { ChatMessage } from "@/lib/types";
+import { Markdown } from "@/components/Markdown";
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
