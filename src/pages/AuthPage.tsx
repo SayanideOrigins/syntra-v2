@@ -52,7 +52,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      toast({ ...friendlyAuthError(error), variant: "destructive" });
     } else {
       navigate("/home", { replace: true });
     }
