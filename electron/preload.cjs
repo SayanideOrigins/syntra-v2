@@ -6,4 +6,5 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("electronAPI", {
   isElectron: true,
   googleSignIn: (authUrl) => ipcRenderer.invoke("google-sign-in", authUrl),
+  clearAuthSession: () => ipcRenderer.invoke("auth-clear-session"),
 });

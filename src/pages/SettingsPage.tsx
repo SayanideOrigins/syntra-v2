@@ -70,6 +70,10 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    try {
+      const { clearElectronAuthSession } = await import("@/lib/electron-auth");
+      await clearElectronAuthSession();
+    } catch { /* not in electron */ }
     navigate("/auth");
   };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Copy, Check, Pencil } from "lucide-react";
 import type { ChatMessage } from "@/lib/types";
+import { Markdown } from "@/components/Markdown";
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -147,12 +148,21 @@ export function MessageBubble({ message, showSenderName, onEdit, fontSize = 13 }
               : "bg-chat-ai border-chat-ai-border rounded-bl-[4px]"
           } text-foreground`}
         >
-          <p className="whitespace-pre-wrap break-words" style={{ fontSize: `${fontSize}px` }}>
-            {shownText}
-            {showCursor && !isUser && (
-              <span className="inline-block w-[2px] h-[14px] bg-primary ml-[1px] align-middle" style={{ animation: "pulse-status 1s ease-in-out infinite" }} />
-            )}
-          </p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap break-words" style={{ fontSize: `${fontSize}px` }}>
+              {shownText}
+            </p>
+          ) : (
+            <div className="relative">
+              <Markdown text={shownText} fontSize={fontSize} />
+              {showCursor && (
+                <span
+                  className="inline-block w-[2px] h-[14px] bg-primary ml-[1px] align-middle"
+                  style={{ animation: "pulse-status 1s ease-in-out infinite" }}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Hover controls - RIGHT side for AI messages */}

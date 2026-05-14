@@ -5,6 +5,30 @@ import { lovable } from "@/integrations/lovable/index";
 import { isElectron, signInWithGoogleElectron } from "@/lib/electron-auth";
 import { toast } from "@/hooks/use-toast";
 
+/** Map a raw Supabase / network error into a friendly description. */
+function friendlyAuthError(err: unknown): { title: string; description: string } {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+  const msg = raw.toLowerCase();
+  if (!raw) return { title: "Something went wrong", description: "Please try again." };
+  if (msg.includes("invalid login") || msg.includes("invalid_credentials"))
+    return { title: "Wrong email or password", description: "Double-check your credentials and try again." };
+  if (msg.includes("email not confirmed"))
+    return { title: "Email not verified", description: "Open the confirmation link we sent to your inbox." };
+  if (msg.includes("user already registered") || msg.includes("already been registered"))
+    return { title: "Account already exists", description: "Try signing in instead, or use 'Forgot password'." };
+  if (msg.includes("password should be") || msg.includes("weak password") || msg.includes("pwned") || msg.includes("compromised"))
+    return { title: "Password too weak", description: "Use at least 8 characters with a mix of letters, numbers, and symbols. Avoid passwords found in data breaches." };
+  if (msg.includes("rate limit") || msg.includes("too many"))
+    return { title: "Too many attempts", description: "Please wait a minute before trying again." };
+  if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed to fetch"))
+    return { title: "Network error", description: "Check your internet connection and retry." };
+  if (msg.includes("invalid email"))
+    return { title: "Invalid email", description: "Enter a valid email address." };
+  if (msg.includes("popup") || msg.includes("window closed") || msg.includes("sign-in window closed"))
+    return { title: "Sign-in cancelled", description: "The Google window was closed before finishing." };
+  return { title: "Sign in failed", description: raw };
+}
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"signin" | "signup">("signin");
@@ -28,7 +52,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      toast({ ...friendlyAuthError(error), variant: "destructive" });
     } else {
       navigate("/home", { replace: true });
     }
@@ -52,7 +76,7 @@ export default function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+      toast({ ...friendlyAuthError(error), variant: "destructive" });
     } else {
       setSignupSuccess(true);
     }
@@ -71,10 +95,10 @@ export default function AuthPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast({ title: "Google sign in failed", description: String(result.error), variant: "destructive" });
+        toast({ ...friendlyAuthError(result.error), variant: "destructive" });
       }
     } catch (e) {
-      toast({ title: "Google sign in failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ ...friendlyAuthError(e), variant: "destructive" });
     } finally {
       setLoading(false);
     }

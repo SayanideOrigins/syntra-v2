@@ -42,6 +42,20 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
+// ---------- Logout: wipe Google OAuth partition so account picker shows again ----------
+ipcMain.handle("auth-clear-session", async () => {
+  try {
+    const oauthSession = session.fromPartition("persist:google-oauth");
+    await oauthSession.clearStorageData({
+      storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
+    });
+    await oauthSession.clearCache();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+});
+
 // ---------- Google OAuth via in-app BrowserWindow ----------
 ipcMain.handle("google-sign-in", async (event, authUrl) => {
   return new Promise((resolve) => {
