@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { isElectron, signInWithGoogleElectron } from "@/lib/electron-auth";
 import { toast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
