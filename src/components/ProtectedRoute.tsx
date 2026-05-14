@@ -30,6 +30,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.id) {
         setDbUserId(session.user.id);
+        ensureProfile(session.user.id, session.user.email);
       }
       setSession(session);
       setLoading(false);
