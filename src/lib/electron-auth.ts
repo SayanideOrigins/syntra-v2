@@ -19,12 +19,19 @@ declare global {
         | { ok: true; hash: string; query: string; url: string }
         | { ok: false; error: string }
       >;
+      clearAuthSession?: () => Promise<{ ok: boolean; error?: string }>;
     };
   }
 }
 
 export const isElectron = (): boolean =>
   typeof window !== "undefined" && !!window.electronAPI?.isElectron;
+
+/** Clear the Electron OAuth partition so the next sign-in shows the Google account picker. */
+export async function clearElectronAuthSession(): Promise<void> {
+  if (!window.electronAPI?.clearAuthSession) return;
+  try { await window.electronAPI.clearAuthSession(); } catch { /* best effort */ }
+}
 
 /**
  * Run Google OAuth inside an in-app Electron BrowserWindow.
