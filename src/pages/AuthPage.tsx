@@ -59,12 +59,23 @@ export default function AuthPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    setLoading(false);
-    if (result.error) {
-      toast({ title: "Google sign in failed", description: String(result.error), variant: "destructive" });
+    try {
+      if (isElectron()) {
+        // In Electron: run OAuth inside an in-app BrowserWindow, no external browser.
+        await signInWithGoogleElectron();
+        navigate("/home", { replace: true });
+        return;
+      }
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({ title: "Google sign in failed", description: String(result.error), variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Google sign in failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
