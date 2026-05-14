@@ -98,7 +98,7 @@ export default function AuthPage() {
         toast({ ...friendlyAuthError(result.error), variant: "destructive" });
       }
     } catch (e) {
-      toast({ title: "Google sign in failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ ...friendlyAuthError(e), variant: "destructive" });
     } finally {
       setLoading(false);
     }
