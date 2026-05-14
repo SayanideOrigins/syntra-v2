@@ -76,7 +76,7 @@ export default function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+      toast({ ...friendlyAuthError(error), variant: "destructive" });
     } else {
       setSignupSuccess(true);
     }
